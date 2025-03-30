@@ -1,8 +1,61 @@
 #!/usr/bin/env bash
 
-# TODO: Make a script to download youtube video from given timeframes
-#
-# E.g.: youtube-time 2:00 4:00 tutorial.mkv "https://www.youtube.com/watch?v=SPwyp2NG-bE"
-# The above command should create a output file which contains the video from 2 min to 4 min.
-#
-# Refer: youtube-dl and ffmpeg commands for this
+# Script to download a specific segment from a YouTube video.
+
+# Usage: youtube-time START_TIME END_TIME OUTPUT_FILENAME VIDEO_URL
+
+# To check if the correct number of arguments is provided
+if [ "$#" -ne 4 ]; then
+    echo "Usage: $0 START_TIME END_TIME OUTPUT_FILENAME VIDEO_URL"
+    echo "Example: $0 2:00 4:00 tutorial.mkv \"https://www.youtube.com/watch?v=SPwyp2NG-bE\""
+    exit 1
+fi
+
+START_TIME=$1
+END_TIME=$2
+OUTPUT_FILENAME=$3
+VIDEO_URL=$4
+
+# Temporary storage for the downloaded video
+TEMP_VIDEO="temp_video.mp4"
+
+if ! command -v yt-dlp &> /dev/null; then
+    echo "[ERROR] yt-dlp is not installed. Please install it using: sudo apt install yt-dlp"
+    exit 1
+fi
+
+if ! command -v ffmpeg &> /dev/null; then
+    echo "[ERROR] ffmpeg is not installed. Please install it using: sudo apt install ffmpeg"
+    exit 1
+fi
+
+# Download the video
+echo "[INFO] Downloading video from $VIDEO_URL..."
+yt-dlp -f best -o "$TEMP_VIDEO" "$VIDEO_URL"
+
+# Check 
+if [ $? -ne 0 ]; then
+    echo "[ERROR] Failed to download video."
+    exit 1
+fi
+
+# Convert time format to seconds
+START_SECONDS=$(echo $START_TIME | awk -F: '{ print ($1 * 60) + $2 }')
+END_SECONDS=$(echo $END_TIME | awk -F: '{ print ($1 * 60) + $2 }')
+DURATION=$(($END_SECONDS - $START_SECONDS))
+
+# Extract the specific segment using ffmpeg
+echo "[INFO] Extracting segment from $START_TIME to $END_TIME..."
+ffmpeg -i "$TEMP_VIDEO" -ss "$START_TIME" -t "$DURATION" -c:v copy -c:a copy "$OUTPUT_FILENAME"
+
+# Check if segment extraction was successful
+if [ $? -ne 0 ]; then
+    echo "[ERROR] Failed to extract video segment."
+    rm -f "$TEMP_VIDEO"
+    exit 1
+fi
+
+# Clean up temporary video file
+rm -f "$TEMP_VIDEO"
+
+echo "[INFO] Video segment saved as $OUTPUT_FILENAME"
