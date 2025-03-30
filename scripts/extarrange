@@ -1,24 +1,26 @@
 #!/usr/bin/env bash
 
-# Arranges the files by grouping them into folder of their extension name
-# TODO: Run this script in your downloads folder
+# Arranges the files by grouping them into folders based on their extension
+# TODO: Run this script in your downloads folder or any target directory
 
 require() {
-    command -v "$1" 1>/dev/null || { >&2 echo "Error: $1 is not installed";exit 1; }
+    command -v "$1" 1>/dev/null || { >&2 echo "Error: $1 is not installed"; exit 1; }
 }
 
 require fd
 require egrep
 
 declare -A special_cases=(
-    ['^*.(tar.*|tbz)$']='tar'
-    # TODO: Add your own pattern here for similar file types appropriately
-    # Refer https://regex101.com/ & https://github.com/ziishaned/learn-regex/ for explaination and writing patterns
-    # These (regex) are same as ones used in sed command
+    ['\.(tar\.gz|tgz|tar\.bz2|tbz|tar\.xz|txz)$']='tar'    
+    ['\.(zip|rar|7z)$']='archives'                         
+    ['\.(jpg|jpeg|png|gif|bmp)$']='images'                
+    ['\.(mp4|mkv|avi|mov|flv)$']='videos'                 
+    ['\.(pdf|doc|docx|txt)$']='documents'                  
 )
 
 fd -tf -d1 \
 | while read file; do
+    echo "Processing file: $file"
     folder="$PWD/${file##*.}"
     for regex in "${!special_cases[@]}"; do
         (echo "$file" | egrep -q "$regex") && {
@@ -30,4 +32,3 @@ fd -tf -d1 \
     mkdir -p "$folder"
     mv "$file" "$folder"
 done
-
