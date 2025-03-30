@@ -1,4 +1,0 @@
-#!/usr/bin/env bash
-
-# TODO: Display lines of code by language in a remote git repository
-# Refer "cloc" command or similar
